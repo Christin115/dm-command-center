@@ -9,7 +9,6 @@ from server.models import (db, bcrypt, User, Campaign, Task, Note)
 
 
 
-# // faf
 
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///app.db"
