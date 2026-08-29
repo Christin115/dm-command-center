@@ -423,26 +423,6 @@ article .status {
   margin-bottom: 0.75rem;
 }
 
-.danger-button {
-  background: var(--danger);
-  color: white;
-}
-
-.danger-button:hover {
-  background: var(--danger-hover);
-}
-
-.secondary-button {
-  background: var(--panel-light);
-  color: var(--text);
-  border: 1px solid var(--border);
-}
-
-.secondary-button:hover {
-  background: #2b303c;
-  color: white;
-}
-
 /* HP ADJUST */
 
 .hp-adjust {

@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from server.app import app
 from server.models import (
     db,

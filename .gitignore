@@ -18,6 +18,9 @@ instance/
 # Environment variables
 .env
 
+# curl cookie jars from manual API testing
+cookies.txt
+
 
 # --------------------
 # JavaScript / React
