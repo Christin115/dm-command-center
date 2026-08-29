@@ -7,6 +7,15 @@ import DndDetailPanel from "./DndDetailPanel";
 function CombatantCard({ combatant, onEdit, onDelete, onAdjustHp }) {
   const [statBlock, setStatBlock] = useState(null);
   const [showStatBlock, setShowStatBlock] = useState(false);
+  const [hpAmount, setHpAmount] = useState(1);
+
+  function handleDamage() {
+    onAdjustHp(combatant, -hpAmount);
+  }
+
+  function handleHeal() {
+    onAdjustHp(combatant, hpAmount);
+  }
 
   async function toggleStatBlock() {
     if (showStatBlock) {
@@ -50,23 +59,32 @@ function CombatantCard({ combatant, onEdit, onDelete, onAdjustHp }) {
 
       {combatant.notes && <p>{combatant.notes}</p>}
 
+      <div className="hp-adjust">
+        <input
+          type="number"
+          min="0"
+          value={hpAmount}
+          onChange={(event) => setHpAmount(Number(event.target.value))}
+        />
+
+        <button
+          type="button"
+          className="danger-button"
+          onClick={handleDamage}
+        >
+          Damage
+        </button>
+
+        <button
+          type="button"
+          className="secondary-button"
+          onClick={handleHeal}
+        >
+          Heal
+        </button>
+      </div>
+
       <div className="card-actions">
-        <button
-          type="button"
-          className="secondary-button"
-          onClick={() => onAdjustHp(combatant, -1)}
-        >
-          -1 HP
-        </button>
-
-        <button
-          type="button"
-          className="secondary-button"
-          onClick={() => onAdjustHp(combatant, 1)}
-        >
-          +1 HP
-        </button>
-
         <button
           type="button"
           onClick={() => onEdit(combatant)}

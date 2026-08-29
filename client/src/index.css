@@ -443,6 +443,23 @@ article .status {
   color: white;
 }
 
+/* HP ADJUST */
+
+.hp-adjust {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 1.25rem;
+}
+
+.hp-adjust input {
+  width: 80px;
+}
+
+.hp-adjust button {
+  width: auto;
+}
+
 /* D&D SEARCH / DETAIL */
 
 .dnd-search-results {
