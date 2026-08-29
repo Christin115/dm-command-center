@@ -9,6 +9,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import CampaignDetails from "./pages/CampaignDetails";
+import EncounterBuilder from "./pages/EncounterBuilder";
 import Compendium from "./pages/Compendium";
 
 
@@ -42,6 +43,11 @@ function App() {
         <Route
           path="/campaigns/:id"
           element={<CampaignDetails />}
+        />
+
+        <Route
+          path="/campaigns/:campaignId/encounters/:encounterId"
+          element={<EncounterBuilder />}
         />
 
         <Route

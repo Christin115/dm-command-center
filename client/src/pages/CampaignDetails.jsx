@@ -7,6 +7,8 @@ import TaskForm from "../components/TaskForm";
 import TaskCard from "../components/TaskCard";
 import NoteForm from "../components/NoteForm";
 import NoteCard from "../components/NoteCard";
+import EncounterForm from "../components/EncounterForm";
+import EncounterCard from "../components/EncounterCard";
 
 
 function CampaignDetails() {
@@ -42,6 +44,10 @@ function CampaignDetails() {
   const [editNoteTitle, setEditNoteTitle] = useState("");
   const [editNoteContent, setEditNoteContent] = useState("");
   const [editNoteCategory, setEditNoteCategory] = useState("Other");
+
+  // CREATE ENCOUNTER
+
+  const [encounterName, setEncounterName] = useState("");
 
 
   function loadCampaign() {
@@ -263,6 +269,49 @@ function CampaignDetails() {
   }
 
 
+  async function addEncounter(event) {
+    event.preventDefault();
+
+    try {
+      await apiFetch(`/campaigns/${id}/encounters`, {
+        method: "POST",
+
+        body: JSON.stringify({
+          name: encounterName,
+        }),
+      });
+
+      setEncounterName("");
+
+      setError("");
+
+      loadCampaign();
+
+    } catch (error) {
+      setError(error.message);
+    }
+  }
+
+
+  async function deleteEncounter(encounterId) {
+    try {
+      await apiFetch(
+        `/encounters/${encounterId}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      setError("");
+
+      loadCampaign();
+
+    } catch (error) {
+      setError(error.message);
+    }
+  }
+
+
   if (!campaign) {
     return (
       <main>
@@ -456,6 +505,45 @@ function CampaignDetails() {
               />
 
             )
+
+          ))}
+
+        </div>
+
+      </section>
+
+
+      {/* ENCOUNTER SECTION */}
+
+      <section>
+
+        <h2>
+          Encounters
+        </h2>
+
+
+        <EncounterForm
+          name={encounterName}
+          setName={setEncounterName}
+          onSubmit={addEncounter}
+        />
+
+
+        <div className="campaign-grid">
+
+          {campaign.encounters.map((encounter) => (
+
+            <EncounterCard
+              key={encounter.id}
+
+              encounter={encounter}
+
+              campaignId={id}
+
+              onDelete={
+                deleteEncounter
+              }
+            />
 
           ))}
 
