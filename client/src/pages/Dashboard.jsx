@@ -183,7 +183,7 @@ function Dashboard() {
                     className="danger-button"
                     onClick={() => deleteCampaign(campaign.id)}
                   >
-                    Detlete Campaign
+                    Delete Campaign
                   </button>
                 </div>
               </>
