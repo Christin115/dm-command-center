@@ -42,11 +42,12 @@ class Campaign(db.Model):
     title = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text, nullable=True)
     game_system = db.Column(db.String(50), nullable=True, default='Dungeons & Dragons 5e')
-    status = db.Column(db.String(20), nullable=False, default='active')  # e.g., active, completed, on-hold
+    status = db.Column(db.String(20), nullable=False, default='Active')  # e.g., Active, Completed, On Hold
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     user = db.relationship('User', back_populates='campaigns')
     tasks = db.relationship('Task', back_populates='campaign', cascade='all, delete-orphan')
     notes = db.relationship('Note', back_populates='campaign', cascade='all, delete-orphan')
+    encounters = db.relationship('Encounter', back_populates='campaign', cascade='all, delete-orphan')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -73,6 +74,7 @@ class Campaign(db.Model):
         if include_details:
             data['tasks'] = [task.to_dict() for task in self.tasks]
             data['notes'] = [note.to_dict() for note in self.notes]
+            data['encounters'] = [encounter.to_dict() for encounter in self.encounters]
 
         return data
 
@@ -98,7 +100,7 @@ class Task(db.Model):
 
     @validates('priority')
     def validate_priority(self, key, value):
-        allowed =  ['low', 'medium', 'high']
+        allowed = ['low', 'medium', 'high']
         if value not in allowed:
             raise ValueError("Priority must be one of: low, medium, high")
         return value
@@ -156,6 +158,132 @@ class Note(db.Model):
             "content": self.content,
             "category": self.category,
             "campaign_id": self.campaign_id,
+            "created_at": self.created_at.isoformat(),
+            "updated_at": self.updated_at.isoformat()
+            if self.updated_at else None
+        }
+
+class Encounter(db.Model):
+    __tablename__ = 'encounters'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    status = db.Column(db.String(20), nullable=False, default='Preparing')
+    round_number = db.Column(db.Integer, nullable=False, default=1)
+    campaign_id = db.Column(db.Integer, db.ForeignKey('campaigns.id'), nullable=False)
+    campaign = db.relationship('Campaign', back_populates='encounters')
+    combatants = db.relationship(
+        'Combatant',
+        back_populates='encounter',
+        cascade='all, delete-orphan',
+        order_by='Combatant.initiative.desc()'
+    )
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    @validates('name')
+    def validate_name(self, key, value):
+        if not value or len(value.strip()) < 2:
+            raise ValueError("Name must be at least 2 characters long.")
+        return value.strip()
+
+    @validates('status')
+    def validate_status(self, key, value):
+        allowed = ['Preparing', 'Active', 'Completed']
+        if value not in allowed:
+            raise ValueError("Status must be one of: Preparing, Active, Completed")
+        return value
+
+    @validates('round_number')
+    def validate_round_number(self, key, value):
+        if value is None or value < 1:
+            raise ValueError("Round number must be at least 1.")
+        return value
+
+    def to_dict(self, include_details=False):
+
+        data = {
+            "id": self.id,
+            "name": self.name,
+            "status": self.status,
+            "round_number": self.round_number,
+            "campaign_id": self.campaign_id,
+            "created_at": self.created_at.isoformat(),
+            "updated_at": self.updated_at.isoformat()
+            if self.updated_at else None
+        }
+
+        if include_details:
+            data['combatants'] = [combatant.to_dict() for combatant in self.combatants]
+
+        return data
+
+class Combatant(db.Model):
+    __tablename__ = 'combatants'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    combatant_type = db.Column(db.String(20), nullable=False, default='pc')
+    initiative = db.Column(db.Integer, nullable=False, default=10)
+    max_hp = db.Column(db.Integer, nullable=False)
+    current_hp = db.Column(db.Integer, nullable=False)
+    armor_class = db.Column(db.Integer, nullable=False)
+    dnd_monster_index = db.Column(db.String(100), nullable=True)
+    notes = db.Column(db.Text, nullable=True)
+    encounter_id = db.Column(db.Integer, db.ForeignKey('encounters.id'), nullable=False)
+    encounter = db.relationship('Encounter', back_populates='combatants')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    @validates('name')
+    def validate_name(self, key, value):
+        if not value or len(value.strip()) < 2:
+            raise ValueError("Name must be at least 2 characters long.")
+        return value.strip()
+
+    @validates('combatant_type')
+    def validate_combatant_type(self, key, value):
+        allowed = ['pc', 'npc', 'monster']
+        if value not in allowed:
+            raise ValueError("Combatant type must be one of: pc, npc, monster")
+        return value
+
+    @validates('initiative')
+    def validate_initiative(self, key, value):
+        if value is None or value < -10 or value > 50:
+            raise ValueError("Initiative must be between -10 and 50.")
+        return value
+
+    @validates('max_hp')
+    def validate_max_hp(self, key, value):
+        if value is None or value <= 0:
+            raise ValueError("Max HP must be greater than 0.")
+        return value
+
+    @validates('current_hp')
+    def validate_current_hp(self, key, value):
+        if value is None or value < 0:
+            raise ValueError("Current HP must be 0 or greater.")
+        return value
+
+    @validates('armor_class')
+    def validate_armor_class(self, key, value):
+        if value is None or value < 0:
+            raise ValueError("Armor class must be 0 or greater.")
+        return value
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "combatant_type": self.combatant_type,
+            "initiative": self.initiative,
+            "max_hp": self.max_hp,
+            "current_hp": self.current_hp,
+            "armor_class": self.armor_class,
+            "dnd_monster_index": self.dnd_monster_index,
+            "notes": self.notes,
+            "encounter_id": self.encounter_id,
             "created_at": self.created_at.isoformat(),
             "updated_at": self.updated_at.isoformat()
             if self.updated_at else None

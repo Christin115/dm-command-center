@@ -4,8 +4,9 @@ from flask import Flask, request, session
 from flask_migrate import Migrate
 from flask_cors import CORS
 from sqlalchemy.exc import IntegrityError
+import requests
 
-from server.models import (db, bcrypt, User, Campaign, Task, Note)
+from server.models import (db, bcrypt, User, Campaign, Task, Note, Encounter, Combatant)
 
 
 
@@ -15,6 +16,7 @@ app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///app.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["SECRET_KEY"] = "development-secret-key"
 app.json.compact = False
+DND_API_BASE = "https://www.dnd5eapi.co/api/2014"
 
 db.init_app(app)
 bcrypt.init_app(app)
@@ -325,7 +327,7 @@ def campaign_tasks(campaign_id):
             description=data.get("description"),
             priority=data.get(
                 "priority",
-                "Medium"
+                "medium"
             ),
             status=data.get(
                 "status",
@@ -554,8 +556,367 @@ def note_by_id(id):
 
         return {}, 204
 
+@app.route(
+    "/campaigns/<int:campaign_id>/encounters",
+    methods=["GET", "POST"]
+)
+def campaign_encounters(campaign_id):
+
+    user_id = current_user_id()
+
+    if not user_id:
+        return {
+            "error": "Not authorized."
+        }, 401
+
+    campaign = Campaign.query.filter_by(
+        id=campaign_id,
+        user_id=user_id
+    ).first()
+
+    if not campaign:
+        return {
+            "error": "Campaign not found."
+        }, 404
+
+    if request.method == "GET":
+
+        return [
+            encounter.to_dict()
+            for encounter in campaign.encounters
+        ], 200
+
+    data = request.get_json() or {}
+
+    try:
+
+        encounter = Encounter(
+            name=data.get("name"),
+            status=data.get(
+                "status",
+                "Preparing"
+            ),
+            round_number=data.get(
+                "round_number",
+                1
+            ),
+            campaign_id=campaign.id
+        )
+
+        db.session.add(encounter)
+
+        db.session.commit()
+
+        return encounter.to_dict(), 201
+
+    except ValueError as error:
+
+        db.session.rollback()
+
+        return {
+            "error": str(error)
+        }, 400
+
+@app.route(
+    "/encounters/<int:id>",
+    methods=["GET", "PATCH", "DELETE"]
+)
+def encounter_by_id(id):
+
+    user_id = current_user_id()
+
+    if not user_id:
+        return {
+            "error": "Not authorized."
+        }, 401
+
+    encounter = (
+        Encounter.query
+        .join(Campaign)
+        .filter(
+            Encounter.id == id,
+            Campaign.user_id == user_id
+        )
+        .first()
+    )
+
+    if not encounter:
+        return {
+            "error": "Encounter not found."
+        }, 404
+
+    if request.method == "GET":
+
+        return encounter.to_dict(
+            include_details=True
+        ), 200
+
+    if request.method == "PATCH":
+
+        data = request.get_json() or {}
+
+        try:
+
+            if "name" in data:
+                encounter.name = data["name"]
+
+            if "status" in data:
+                encounter.status = data["status"]
+
+            if "round_number" in data:
+                encounter.round_number = data["round_number"]
+
+            db.session.commit()
+
+            return encounter.to_dict(), 200
+
+        except ValueError as error:
+
+            db.session.rollback()
+
+            return {
+                "error": str(error)
+            }, 400
+
+    if request.method == "DELETE":
+
+        db.session.delete(encounter)
+
+        db.session.commit()
+
+        return {}, 204
+
+@app.route(
+    "/encounters/<int:encounter_id>/combatants",
+    methods=["GET", "POST"]
+)
+def encounter_combatants(encounter_id):
+
+    user_id = current_user_id()
+
+    if not user_id:
+        return {
+            "error": "Not authorized."
+        }, 401
+
+    encounter = (
+        Encounter.query
+        .join(Campaign)
+        .filter(
+            Encounter.id == encounter_id,
+            Campaign.user_id == user_id
+        )
+        .first()
+    )
+
+    if not encounter:
+        return {
+            "error": "Encounter not found."
+        }, 404
+
+    if request.method == "GET":
+
+        return [
+            combatant.to_dict()
+            for combatant in encounter.combatants
+        ], 200
+
+    data = request.get_json() or {}
+
+    try:
+
+        combatant = Combatant(
+            name=data.get("name"),
+            combatant_type=data.get(
+                "combatant_type",
+                "pc"
+            ),
+            initiative=data.get(
+                "initiative",
+                10
+            ),
+            max_hp=data.get("max_hp"),
+            current_hp=data.get(
+                "current_hp",
+                data.get("max_hp")
+            ),
+            armor_class=data.get("armor_class"),
+            dnd_monster_index=data.get("dnd_monster_index"),
+            notes=data.get("notes"),
+            encounter_id=encounter.id
+        )
+
+        db.session.add(combatant)
+
+        db.session.commit()
+
+        return combatant.to_dict(), 201
+
+    except ValueError as error:
+
+        db.session.rollback()
+
+        return {
+            "error": str(error)
+        }, 400
+
+@app.route(
+    "/combatants/<int:id>",
+    methods=["GET", "PATCH", "DELETE"]
+)
+def combatant_by_id(id):
+
+    user_id = current_user_id()
+
+    if not user_id:
+        return {
+            "error": "Not authorized."
+        }, 401
+
+    combatant = (
+        Combatant.query
+        .join(Encounter)
+        .join(Campaign)
+        .filter(
+            Combatant.id == id,
+            Campaign.user_id == user_id
+        )
+        .first()
+    )
+
+    if not combatant:
+        return {
+            "error": "Combatant not found."
+        }, 404
+
+    if request.method == "GET":
+
+        return combatant.to_dict(), 200
+
+    if request.method == "PATCH":
+
+        data = request.get_json() or {}
+
+        try:
+
+            if "name" in data:
+                combatant.name = data["name"]
+
+            if "combatant_type" in data:
+                combatant.combatant_type = data["combatant_type"]
+
+            if "initiative" in data:
+                combatant.initiative = data["initiative"]
+
+            if "max_hp" in data:
+                combatant.max_hp = data["max_hp"]
+
+            if "current_hp" in data:
+                combatant.current_hp = data["current_hp"]
+
+            if "armor_class" in data:
+                combatant.armor_class = data["armor_class"]
+
+            if "notes" in data:
+                combatant.notes = data["notes"]
+
+            db.session.commit()
+
+            return combatant.to_dict(), 200
+
+        except ValueError as error:
+
+            db.session.rollback()
+
+            return {
+                "error": str(error)
+            }, 400
+
+    if request.method == "DELETE":
+
+        db.session.delete(combatant)
+
+        db.session.commit()
+
+        return {}, 204
+
+@app.route("/dnd/<string:resource>", methods=["GET"])
+def dnd_search(resource):
+    allowed_resources = {
+        "monsters",
+        "spells",
+        "equipment",
+        "magic-items",
+        "conditions",
+        "classes",
+        "races"
+    }
+
+    if resource not in allowed_resources:
+        return {
+            "error": "Invalid D&D resource."
+        }, 400
+
+    search = request.args.get("name", "").strip()
+
+    try:
+        response = requests.get(
+            f"{DND_API_BASE}/{resource}",
+            params={"name": search} if search else {},
+            timeout=10
+        )
+
+        response.raise_for_status()
+
+        return response.json(), 200
+
+    except requests.RequestException:
+        return {
+            "error": "Unable to reach the D&D API."
+        }, 502
+
+@app.route("/dnd/<string:resource>/<string:index>", methods = ["GET"])
+def dnd_details(resource, index):
+    allowed_resources = {
+        "monsters",
+        "spells",
+        "equipment",
+        "magic-items",
+        "conditions",
+        "classes",
+        "races"
+    }
+
+    if resource not in allowed_resources:
+        return {"error": "Invalid D&D resource."}, 400
+
+    try:
+        response = requests.get(
+            f"{DND_API_BASE}/{resource}/{index}", timeout=10
+        )
+
+        if response.status_code == 404:
+            return {
+                "error": "D&D resource not found."
+            }, 404
+
+        response.raise_for_status()
+
+        return response.json(), 200
+
+    except requests.RequestException:
+        return {
+            "error": "Unable to reach the D&D API."
+        }, 502
+
+
+
+
+
 if __name__ == "__main__":
     app.run(
         port=5555,
         debug=True
     )
+
+    
