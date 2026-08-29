@@ -311,6 +311,7 @@ article h3 {
 
 .secondary-button:hover {
   background: #2b303c;
+  color: white;
 }
 
 /* STATUS */
@@ -440,4 +441,34 @@ article .status {
 .secondary-button:hover {
   background: #2b303c;
   color: white;
+}
+
+/* D&D SEARCH / DETAIL */
+
+.dnd-search-results {
+  list-style: none;
+  margin: 0 0 1.5rem;
+  padding: 0;
+
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.dnd-detail-panel {
+  margin-top: 1rem;
+}
+
+.dnd-detail-fields {
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.5rem 1.5rem;
+}
+
+.dnd-detail-fields strong {
+  color: #efe3c5;
 }

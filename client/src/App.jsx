@@ -9,6 +9,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import CampaignDetails from "./pages/CampaignDetails";
+import Compendium from "./pages/Compendium";
 
 
 function App() {
@@ -41,6 +42,11 @@ function App() {
         <Route
           path="/campaigns/:id"
           element={<CampaignDetails />}
+        />
+
+        <Route
+          path="/compendium"
+          element={<Compendium />}
         />
 
       </Routes>

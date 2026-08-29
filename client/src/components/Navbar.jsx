@@ -44,6 +44,10 @@ function Navbar() {
         Dashboard
       </Link>
 
+      <Link to="/compendium">
+        Compendium
+      </Link>
+
       <Link to="/login">
         Login
       </Link>
