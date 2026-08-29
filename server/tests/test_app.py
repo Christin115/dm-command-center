@@ -1,7 +1,7 @@
 import pytest
 
 from server.app import app
-from server.models import db, User, Campaign, Task, Note
+from server.models import db, User, Campaign, Encounter, Combatant
 
 
 @pytest.fixture
@@ -522,6 +522,338 @@ def test_empty_note_content(client):
 
 
 # -------------------------
+# ENCOUNTER CRUD TESTS
+# -------------------------
+
+def test_create_encounter(client):
+    login(client)
+
+    response = client.post(
+        "/campaigns/1/encounters",
+        json={
+            "name": "Goblin Ambush"
+        }
+    )
+
+    data = response.get_json()
+
+    assert response.status_code == 201
+    assert data["name"] == "Goblin Ambush"
+    assert data["status"] == "Preparing"
+    assert data["round_number"] == 1
+
+
+def test_get_campaign_encounters(client):
+    login(client)
+
+    client.post(
+        "/campaigns/1/encounters",
+        json={
+            "name": "Bandit Ambush"
+        }
+    )
+
+    response = client.get("/campaigns/1/encounters")
+
+    data = response.get_json()
+
+    assert response.status_code == 200
+    assert len(data) == 1
+    assert data[0]["name"] == "Bandit Ambush"
+
+
+def test_get_single_encounter_includes_combatants(client):
+    login(client)
+
+    create_response = client.post(
+        "/campaigns/1/encounters",
+        json={
+            "name": "Dragon's Lair"
+        }
+    )
+
+    encounter_id = create_response.get_json()["id"]
+
+    response = client.get(f"/encounters/{encounter_id}")
+
+    data = response.get_json()
+
+    assert response.status_code == 200
+    assert data["name"] == "Dragon's Lair"
+    assert "combatants" in data
+
+
+def test_update_encounter(client):
+    login(client)
+
+    create_response = client.post(
+        "/campaigns/1/encounters",
+        json={
+            "name": "Cave Skirmish"
+        }
+    )
+
+    encounter_id = create_response.get_json()["id"]
+
+    response = client.patch(
+        f"/encounters/{encounter_id}",
+        json={
+            "status": "Active",
+            "round_number": 2
+        }
+    )
+
+    data = response.get_json()
+
+    assert response.status_code == 200
+    assert data["status"] == "Active"
+    assert data["round_number"] == 2
+
+
+def test_delete_encounter(client):
+    login(client)
+
+    create_response = client.post(
+        "/campaigns/1/encounters",
+        json={
+            "name": "Temporary Encounter"
+        }
+    )
+
+    encounter_id = create_response.get_json()["id"]
+
+    combatant_response = client.post(
+        f"/encounters/{encounter_id}/combatants",
+        json={
+            "name": "Goblin",
+            "max_hp": 7,
+            "armor_class": 15
+        }
+    )
+
+    combatant_id = combatant_response.get_json()["id"]
+
+    response = client.delete(f"/encounters/{encounter_id}")
+
+    assert response.status_code == 204
+
+    second_response = client.get(f"/combatants/{combatant_id}")
+
+    assert second_response.status_code == 404
+
+
+def test_invalid_encounter_status(client):
+    login(client)
+
+    create_response = client.post(
+        "/campaigns/1/encounters",
+        json={
+            "name": "Invalid Status Encounter"
+        }
+    )
+
+    encounter_id = create_response.get_json()["id"]
+
+    response = client.patch(
+        f"/encounters/{encounter_id}",
+        json={
+            "status": "Not A Real Status"
+        }
+    )
+
+    assert response.status_code == 400
+    assert "error" in response.get_json()
+
+
+# -------------------------
+# COMBATANT CRUD TESTS
+# -------------------------
+
+def create_encounter(client):
+    response = client.post(
+        "/campaigns/1/encounters",
+        json={
+            "name": "Test Encounter"
+        }
+    )
+
+    return response.get_json()["id"]
+
+
+def test_create_combatant(client):
+    login(client)
+
+    encounter_id = create_encounter(client)
+
+    response = client.post(
+        f"/encounters/{encounter_id}/combatants",
+        json={
+            "name": "Goblin Scout",
+            "combatant_type": "monster",
+            "initiative": 14,
+            "max_hp": 7,
+            "armor_class": 15
+        }
+    )
+
+    data = response.get_json()
+
+    assert response.status_code == 201
+    assert data["name"] == "Goblin Scout"
+    assert data["current_hp"] == 7
+
+
+def test_get_encounter_combatants(client):
+    login(client)
+
+    encounter_id = create_encounter(client)
+
+    client.post(
+        f"/encounters/{encounter_id}/combatants",
+        json={
+            "name": "Low Initiative",
+            "initiative": 5,
+            "max_hp": 10,
+            "armor_class": 12
+        }
+    )
+
+    client.post(
+        f"/encounters/{encounter_id}/combatants",
+        json={
+            "name": "High Initiative",
+            "initiative": 18,
+            "max_hp": 10,
+            "armor_class": 12
+        }
+    )
+
+    response = client.get(f"/encounters/{encounter_id}/combatants")
+
+    data = response.get_json()
+
+    assert response.status_code == 200
+    assert len(data) == 2
+    assert data[0]["name"] == "High Initiative"
+    assert data[1]["name"] == "Low Initiative"
+
+
+def test_get_single_combatant(client):
+    login(client)
+
+    encounter_id = create_encounter(client)
+
+    create_response = client.post(
+        f"/encounters/{encounter_id}/combatants",
+        json={
+            "name": "Skeleton",
+            "max_hp": 13,
+            "armor_class": 13
+        }
+    )
+
+    combatant_id = create_response.get_json()["id"]
+
+    response = client.get(f"/combatants/{combatant_id}")
+
+    data = response.get_json()
+
+    assert response.status_code == 200
+    assert data["name"] == "Skeleton"
+
+
+def test_update_combatant_hp(client):
+    login(client)
+
+    encounter_id = create_encounter(client)
+
+    create_response = client.post(
+        f"/encounters/{encounter_id}/combatants",
+        json={
+            "name": "Orc",
+            "max_hp": 15,
+            "armor_class": 13
+        }
+    )
+
+    combatant_id = create_response.get_json()["id"]
+
+    response = client.patch(
+        f"/combatants/{combatant_id}",
+        json={
+            "current_hp": 6
+        }
+    )
+
+    data = response.get_json()
+
+    assert response.status_code == 200
+    assert data["current_hp"] == 6
+
+
+def test_delete_combatant(client):
+    login(client)
+
+    encounter_id = create_encounter(client)
+
+    create_response = client.post(
+        f"/encounters/{encounter_id}/combatants",
+        json={
+            "name": "Temporary Combatant",
+            "max_hp": 10,
+            "armor_class": 10
+        }
+    )
+
+    combatant_id = create_response.get_json()["id"]
+
+    response = client.delete(f"/combatants/{combatant_id}")
+
+    assert response.status_code == 204
+
+    second_response = client.get(f"/combatants/{combatant_id}")
+
+    assert second_response.status_code == 404
+
+
+def test_invalid_combatant_type(client):
+    login(client)
+
+    encounter_id = create_encounter(client)
+
+    response = client.post(
+        f"/encounters/{encounter_id}/combatants",
+        json={
+            "name": "Mystery Creature",
+            "combatant_type": "villain",
+            "max_hp": 10,
+            "armor_class": 10
+        }
+    )
+
+    assert response.status_code == 400
+    assert "error" in response.get_json()
+
+
+def test_negative_max_hp(client):
+    login(client)
+
+    encounter_id = create_encounter(client)
+
+    response = client.post(
+        f"/encounters/{encounter_id}/combatants",
+        json={
+            "name": "Broken Combatant",
+            "max_hp": -5,
+            "armor_class": 10
+        }
+    )
+
+    assert response.status_code == 400
+    assert "error" in response.get_json()
+
+
+# -------------------------
 # SECURITY TEST
 # -------------------------
 
@@ -553,6 +885,99 @@ def test_user_cannot_access_another_users_campaign(client):
 
     response = client.get(
         f"/campaigns/{second_campaign_id}"
+    )
+
+    assert response.status_code == 404
+
+
+def test_user_cannot_access_another_users_encounter(client):
+    with app.app_context():
+        second_user = User(
+            username="ThirdDM",
+            email="third@example.com"
+        )
+
+        second_user.set_password(
+            "password123"
+        )
+
+        db.session.add(second_user)
+        db.session.commit()
+
+        second_campaign = Campaign(
+            title="Hidden Campaign",
+            user_id=second_user.id
+        )
+
+        db.session.add(second_campaign)
+        db.session.commit()
+
+        second_encounter = Encounter(
+            name="Hidden Encounter",
+            campaign_id=second_campaign.id
+        )
+
+        db.session.add(second_encounter)
+        db.session.commit()
+
+        second_encounter_id = second_encounter.id
+
+    login(client)
+
+    response = client.get(
+        f"/encounters/{second_encounter_id}"
+    )
+
+    assert response.status_code == 404
+
+
+def test_user_cannot_access_another_users_combatant(client):
+    with app.app_context():
+        second_user = User(
+            username="FourthDM",
+            email="fourth@example.com"
+        )
+
+        second_user.set_password(
+            "password123"
+        )
+
+        db.session.add(second_user)
+        db.session.commit()
+
+        second_campaign = Campaign(
+            title="Guarded Campaign",
+            user_id=second_user.id
+        )
+
+        db.session.add(second_campaign)
+        db.session.commit()
+
+        second_encounter = Encounter(
+            name="Guarded Encounter",
+            campaign_id=second_campaign.id
+        )
+
+        db.session.add(second_encounter)
+        db.session.commit()
+
+        second_combatant = Combatant(
+            name="Guarded Combatant",
+            max_hp=10,
+            current_hp=10,
+            armor_class=10,
+            encounter_id=second_encounter.id
+        )
+
+        db.session.add(second_combatant)
+        db.session.commit()
+
+        second_combatant_id = second_combatant.id
+
+    login(client)
+
+    response = client.get(
+        f"/combatants/{second_combatant_id}"
     )
 
     assert response.status_code == 404
