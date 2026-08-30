@@ -3,6 +3,7 @@ import {
   Route
 } from "react-router-dom";
 
+import { AuthProvider } from "./context/AuthContext";
 import Navbar from "./components/Navbar";
 import RequireAuth from "./components/RequireAuth";
 import Home from "./pages/Home";
@@ -16,7 +17,7 @@ import Compendium from "./pages/Compendium";
 
 function App() {
   return (
-    <>
+    <AuthProvider>
       <Navbar />
 
       <Routes>
@@ -73,7 +74,7 @@ function App() {
         />
 
       </Routes>
-    </>
+    </AuthProvider>
   );
 }
 

@@ -1,16 +1,9 @@
-import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 
-import { apiFetch } from "../api";
+import { useAuth } from "../context/useAuth";
 
 function RequireAuth({ children }) {
-  const [status, setStatus] = useState("checking");
-
-  useEffect(() => {
-    apiFetch("/check_session")
-      .then(() => setStatus("authenticated"))
-      .catch(() => setStatus("unauthenticated"));
-  }, []);
+  const { status } = useAuth();
 
   if (status === "checking") {
     return (

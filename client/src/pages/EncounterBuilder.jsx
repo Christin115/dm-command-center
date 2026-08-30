@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { apiFetch } from "../api";
+import { useFormState } from "../hooks/useFormState";
 
 import CombatantForm from "../components/CombatantForm";
 import CombatantCard from "../components/CombatantCard";
@@ -26,25 +27,13 @@ function EncounterBuilder() {
 
   // CREATE COMBATANT
 
-  const [name, setName] = useState(EMPTY_COMBATANT.name);
-  const [combatantType, setCombatantType] = useState(EMPTY_COMBATANT.combatantType);
-  const [initiative, setInitiative] = useState(EMPTY_COMBATANT.initiative);
-  const [maxHp, setMaxHp] = useState(EMPTY_COMBATANT.maxHp);
-  const [currentHp, setCurrentHp] = useState(EMPTY_COMBATANT.currentHp);
-  const [armorClass, setArmorClass] = useState(EMPTY_COMBATANT.armorClass);
-  const [notes, setNotes] = useState(EMPTY_COMBATANT.notes);
+  const combatantForm = useFormState(EMPTY_COMBATANT);
   const [dndMonsterIndex, setDndMonsterIndex] = useState(null);
 
   // EDIT COMBATANT
 
   const [editingCombatantId, setEditingCombatantId] = useState(null);
-  const [editName, setEditName] = useState("");
-  const [editCombatantType, setEditCombatantType] = useState("pc");
-  const [editInitiative, setEditInitiative] = useState(10);
-  const [editMaxHp, setEditMaxHp] = useState(10);
-  const [editCurrentHp, setEditCurrentHp] = useState(10);
-  const [editArmorClass, setEditArmorClass] = useState(10);
-  const [editNotes, setEditNotes] = useState("");
+  const editCombatantForm = useFormState(EMPTY_COMBATANT);
 
   function loadEncounter() {
     apiFetch(`/encounters/${encounterId}`)
@@ -57,13 +46,7 @@ function EncounterBuilder() {
   }, [encounterId]);
 
   function resetCreateForm() {
-    setName(EMPTY_COMBATANT.name);
-    setCombatantType(EMPTY_COMBATANT.combatantType);
-    setInitiative(EMPTY_COMBATANT.initiative);
-    setMaxHp(EMPTY_COMBATANT.maxHp);
-    setCurrentHp(EMPTY_COMBATANT.currentHp);
-    setArmorClass(EMPTY_COMBATANT.armorClass);
-    setNotes(EMPTY_COMBATANT.notes);
+    combatantForm.reset();
     setDndMonsterIndex(null);
   }
 
@@ -74,13 +57,13 @@ function EncounterBuilder() {
       await apiFetch(`/encounters/${encounterId}/combatants`, {
         method: "POST",
         body: JSON.stringify({
-          name,
-          combatant_type: combatantType,
-          initiative,
-          max_hp: maxHp,
-          current_hp: currentHp,
-          armor_class: armorClass,
-          notes,
+          name: combatantForm.values.name,
+          combatant_type: combatantForm.values.combatantType,
+          initiative: combatantForm.values.initiative,
+          max_hp: combatantForm.values.maxHp,
+          current_hp: combatantForm.values.currentHp,
+          armor_class: combatantForm.values.armorClass,
+          notes: combatantForm.values.notes,
           dnd_monster_index: dndMonsterIndex,
         }),
       });
@@ -97,23 +80,29 @@ function EncounterBuilder() {
     const hitPoints = detail.hit_points || 1;
     const armorClassValue = detail.armor_class?.[0]?.value ?? 10;
 
-    setName(detail.name);
-    setCombatantType("monster");
-    setMaxHp(hitPoints);
-    setCurrentHp(hitPoints);
-    setArmorClass(armorClassValue);
+    combatantForm.setFields({
+      name: detail.name,
+      combatantType: "monster",
+      maxHp: hitPoints,
+      currentHp: hitPoints,
+      armorClass: armorClassValue,
+    });
+
     setDndMonsterIndex(detail.index);
   }
 
   function startEditingCombatant(combatant) {
     setEditingCombatantId(combatant.id);
-    setEditName(combatant.name);
-    setEditCombatantType(combatant.combatant_type);
-    setEditInitiative(combatant.initiative);
-    setEditMaxHp(combatant.max_hp);
-    setEditCurrentHp(combatant.current_hp);
-    setEditArmorClass(combatant.armor_class);
-    setEditNotes(combatant.notes || "");
+
+    editCombatantForm.reset({
+      name: combatant.name,
+      combatantType: combatant.combatant_type,
+      initiative: combatant.initiative,
+      maxHp: combatant.max_hp,
+      currentHp: combatant.current_hp,
+      armorClass: combatant.armor_class,
+      notes: combatant.notes || "",
+    });
   }
 
   async function updateCombatant(event) {
@@ -123,13 +112,13 @@ function EncounterBuilder() {
       await apiFetch(`/combatants/${editingCombatantId}`, {
         method: "PATCH",
         body: JSON.stringify({
-          name: editName,
-          combatant_type: editCombatantType,
-          initiative: editInitiative,
-          max_hp: editMaxHp,
-          current_hp: editCurrentHp,
-          armor_class: editArmorClass,
-          notes: editNotes,
+          name: editCombatantForm.values.name,
+          combatant_type: editCombatantForm.values.combatantType,
+          initiative: editCombatantForm.values.initiative,
+          max_hp: editCombatantForm.values.maxHp,
+          current_hp: editCombatantForm.values.currentHp,
+          armor_class: editCombatantForm.values.armorClass,
+          notes: editCombatantForm.values.notes,
         }),
       });
 
@@ -282,20 +271,8 @@ function EncounterBuilder() {
         <DndResourceSearch resource="monsters" onSelect={prefillFromMonster} />
 
         <CombatantForm
-          name={name}
-          combatantType={combatantType}
-          initiative={initiative}
-          maxHp={maxHp}
-          currentHp={currentHp}
-          armorClass={armorClass}
-          notes={notes}
-          setName={setName}
-          setCombatantType={setCombatantType}
-          setInitiative={setInitiative}
-          setMaxHp={setMaxHp}
-          setCurrentHp={setCurrentHp}
-          setArmorClass={setArmorClass}
-          setNotes={setNotes}
+          values={combatantForm.values}
+          setField={combatantForm.setField}
           onSubmit={addCombatant}
         />
       </section>
@@ -326,20 +303,8 @@ function EncounterBuilder() {
             editingCombatantId === combatant.id ? (
               <article key={combatant.id}>
                 <CombatantForm
-                  name={editName}
-                  combatantType={editCombatantType}
-                  initiative={editInitiative}
-                  maxHp={editMaxHp}
-                  currentHp={editCurrentHp}
-                  armorClass={editArmorClass}
-                  notes={editNotes}
-                  setName={setEditName}
-                  setCombatantType={setEditCombatantType}
-                  setInitiative={setEditInitiative}
-                  setMaxHp={setEditMaxHp}
-                  setCurrentHp={setEditCurrentHp}
-                  setArmorClass={setEditArmorClass}
-                  setNotes={setEditNotes}
+                  values={editCombatantForm.values}
+                  setField={editCombatantForm.setField}
                   onSubmit={updateCombatant}
                   submitLabel="Save Combatant"
                   onCancel={() => setEditingCombatantId(null)}

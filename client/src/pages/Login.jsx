@@ -10,10 +10,13 @@ import {
   apiFetch
 } from "../api";
 
+import { useAuth } from "../context/useAuth";
+
 
 function Login() {
 
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const [formData, setFormData] =
     useState({
@@ -41,7 +44,7 @@ function Login() {
 
     try {
 
-      await apiFetch(
+      const userData = await apiFetch(
         "/login",
         {
           method: "POST",
@@ -50,6 +53,8 @@ function Login() {
           )
         }
       );
+
+      login(userData);
 
       navigate("/dashboard");
 

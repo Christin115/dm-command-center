@@ -1,12 +1,6 @@
 function TaskForm({
-  title,
-  description,
-  priority,
-  status,
-  setTitle,
-  setDescription,
-  setPriority,
-  setStatus,
+  values,
+  setField,
   onSubmit,
   submitLabel = "Add Task",
   onCancel,
@@ -17,23 +11,23 @@ function TaskForm({
 
       <label>Task Title</label>
       <input
-        value={title}
+        value={values.title}
         placeholder="Prepare dragon encounter"
-        onChange={(event) => setTitle(event.target.value)}
+        onChange={(event) => setField("title", event.target.value)}
         required
       />
 
       <label>Description</label>
       <textarea
-        value={description}
+        value={values.description}
         placeholder="Describe what needs to be prepared..."
-        onChange={(event) => setDescription(event.target.value)}
+        onChange={(event) => setField("description", event.target.value)}
       />
 
       <label>Priority</label>
       <select
-        value={priority}
-        onChange={(event) => setPriority(event.target.value)}
+        value={values.priority}
+        onChange={(event) => setField("priority", event.target.value)}
       >
         <option value="low">Low</option>
         <option value="medium">Medium</option>
@@ -42,8 +36,8 @@ function TaskForm({
 
       <label>Status</label>
       <select
-        value={status}
-        onChange={(event) => setStatus(event.target.value)}
+        value={values.status}
+        onChange={(event) => setField("status", event.target.value)}
       >
         <option value="To Do">To Do</option>
         <option value="In Progress">In Progress</option>

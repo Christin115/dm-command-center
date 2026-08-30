@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 
 import { apiFetch } from "../api";
+import { useFormState } from "../hooks/useFormState";
 
 import TaskForm from "../components/TaskForm";
 import TaskCard from "../components/TaskCard";
@@ -13,48 +14,56 @@ import SessionForm from "../components/SessionForm";
 import SessionCard from "../components/SessionCard";
 
 
+const EMPTY_TASK = {
+  title: "",
+  description: "",
+  priority: "medium",
+  status: "To Do",
+};
+
+const EMPTY_NOTE = {
+  title: "",
+  content: "",
+  category: "Other",
+};
+
+const EMPTY_ENCOUNTER = {
+  name: "",
+};
+
+const EMPTY_SESSION = {
+  scheduledAt: "",
+  notes: "",
+};
+
+
 function CampaignDetails() {
   const { id } = useParams();
 
   const [campaign, setCampaign] = useState(null);
   const [error, setError] = useState("");
 
-  // CREATE TASK
+  // TASK
 
-  const [taskTitle, setTaskTitle] = useState("");
-  const [taskDescription, setTaskDescription] = useState("");
-  const [taskPriority, setTaskPriority] = useState("medium");
-  const [taskStatus, setTaskStatus] = useState("To Do");
-
-  // EDIT TASK
+  const taskForm = useFormState(EMPTY_TASK);
 
   const [editingTaskId, setEditingTaskId] = useState(null);
-  const [editTaskTitle, setEditTaskTitle] = useState("");
-  const [editTaskDescription, setEditTaskDescription] = useState("");
-  const [editTaskPriority, setEditTaskPriority] = useState("medium");
-  const [editTaskStatus, setEditTaskStatus] = useState("To Do");
+  const editTaskForm = useFormState(EMPTY_TASK);
 
-  // CREATE NOTE
+  // NOTE
 
-  const [noteTitle, setNoteTitle] = useState("");
-  const [noteContent, setNoteContent] = useState("");
-  const [noteCategory, setNoteCategory] = useState("Other");
-
-  // EDIT NOTE
+  const noteForm = useFormState(EMPTY_NOTE);
 
   const [editingNoteId, setEditingNoteId] = useState(null);
-  const [editNoteTitle, setEditNoteTitle] = useState("");
-  const [editNoteContent, setEditNoteContent] = useState("");
-  const [editNoteCategory, setEditNoteCategory] = useState("Other");
+  const editNoteForm = useFormState(EMPTY_NOTE);
 
-  // CREATE ENCOUNTER
+  // ENCOUNTER
 
-  const [encounterName, setEncounterName] = useState("");
+  const encounterForm = useFormState(EMPTY_ENCOUNTER);
 
-  // CREATE SESSION
+  // SESSION
 
-  const [sessionScheduledAt, setSessionScheduledAt] = useState("");
-  const [sessionNotes, setSessionNotes] = useState("");
+  const sessionForm = useFormState(EMPTY_SESSION);
 
 
   function loadCampaign() {
@@ -77,17 +86,14 @@ function CampaignDetails() {
         method: "POST",
 
         body: JSON.stringify({
-          title: taskTitle,
-          description: taskDescription,
-          priority: taskPriority,
-          status: taskStatus,
+          title: taskForm.values.title,
+          description: taskForm.values.description,
+          priority: taskForm.values.priority,
+          status: taskForm.values.status,
         }),
       });
 
-      setTaskTitle("");
-      setTaskDescription("");
-      setTaskPriority("medium");
-      setTaskStatus("To Do");
+      taskForm.reset();
 
       setError("");
 
@@ -102,17 +108,12 @@ function CampaignDetails() {
   function startEditingTask(task) {
     setEditingTaskId(task.id);
 
-    setEditTaskTitle(task.title);
-
-    setEditTaskDescription(
-      task.description || ""
-    );
-
-    setEditTaskPriority(
-      task.priority.toLowerCase()
-    );
-
-    setEditTaskStatus(task.status);
+    editTaskForm.reset({
+      title: task.title,
+      description: task.description || "",
+      priority: task.priority.toLowerCase(),
+      status: task.status,
+    });
   }
 
 
@@ -126,10 +127,10 @@ function CampaignDetails() {
           method: "PATCH",
 
           body: JSON.stringify({
-            title: editTaskTitle,
-            description: editTaskDescription,
-            priority: editTaskPriority,
-            status: editTaskStatus,
+            title: editTaskForm.values.title,
+            description: editTaskForm.values.description,
+            priority: editTaskForm.values.priority,
+            status: editTaskForm.values.status,
           }),
         }
       );
@@ -198,16 +199,14 @@ function CampaignDetails() {
           method: "POST",
 
           body: JSON.stringify({
-            title: noteTitle,
-            content: noteContent,
-            category: noteCategory,
+            title: noteForm.values.title,
+            content: noteForm.values.content,
+            category: noteForm.values.category,
           }),
         }
       );
 
-      setNoteTitle("");
-      setNoteContent("");
-      setNoteCategory("Other");
+      noteForm.reset();
 
       setError("");
 
@@ -222,9 +221,11 @@ function CampaignDetails() {
   function startEditingNote(note) {
     setEditingNoteId(note.id);
 
-    setEditNoteTitle(note.title);
-    setEditNoteContent(note.content);
-    setEditNoteCategory(note.category);
+    editNoteForm.reset({
+      title: note.title,
+      content: note.content,
+      category: note.category,
+    });
   }
 
 
@@ -238,9 +239,9 @@ function CampaignDetails() {
           method: "PATCH",
 
           body: JSON.stringify({
-            title: editNoteTitle,
-            content: editNoteContent,
-            category: editNoteCategory,
+            title: editNoteForm.values.title,
+            content: editNoteForm.values.content,
+            category: editNoteForm.values.category,
           }),
         }
       );
@@ -284,11 +285,11 @@ function CampaignDetails() {
         method: "POST",
 
         body: JSON.stringify({
-          name: encounterName,
+          name: encounterForm.values.name,
         }),
       });
 
-      setEncounterName("");
+      encounterForm.reset();
 
       setError("");
 
@@ -327,13 +328,12 @@ function CampaignDetails() {
         method: "POST",
 
         body: JSON.stringify({
-          scheduled_at: sessionScheduledAt,
-          notes: sessionNotes,
+          scheduled_at: sessionForm.values.scheduledAt,
+          notes: sessionForm.values.notes,
         }),
       });
 
-      setSessionScheduledAt("");
-      setSessionNotes("");
+      sessionForm.reset();
 
       setError("");
 
@@ -430,16 +430,8 @@ function CampaignDetails() {
 
 
         <TaskForm
-          title={taskTitle}
-          description={taskDescription}
-          priority={taskPriority}
-          status={taskStatus}
-
-          setTitle={setTaskTitle}
-          setDescription={setTaskDescription}
-          setPriority={setTaskPriority}
-          setStatus={setTaskStatus}
-
+          values={taskForm.values}
+          setField={taskForm.setField}
           onSubmit={addTask}
         />
 
@@ -453,21 +445,8 @@ function CampaignDetails() {
               <article key={task.id}>
 
                 <TaskForm
-                  title={editTaskTitle}
-                  description={editTaskDescription}
-                  priority={editTaskPriority}
-                  status={editTaskStatus}
-
-                  setTitle={setEditTaskTitle}
-                  setDescription={
-                    setEditTaskDescription
-                  }
-                  setPriority={
-                    setEditTaskPriority
-                  }
-                  setStatus={
-                    setEditTaskStatus
-                  }
+                  values={editTaskForm.values}
+                  setField={editTaskForm.setField}
 
                   onSubmit={updateTask}
 
@@ -519,14 +498,8 @@ function CampaignDetails() {
 
 
         <NoteForm
-          title={noteTitle}
-          content={noteContent}
-          category={noteCategory}
-
-          setTitle={setNoteTitle}
-          setContent={setNoteContent}
-          setCategory={setNoteCategory}
-
+          values={noteForm.values}
+          setField={noteForm.setField}
           onSubmit={addNote}
         />
 
@@ -540,17 +513,8 @@ function CampaignDetails() {
               <article key={note.id}>
 
                 <NoteForm
-                  title={editNoteTitle}
-                  content={editNoteContent}
-                  category={editNoteCategory}
-
-                  setTitle={setEditNoteTitle}
-                  setContent={
-                    setEditNoteContent
-                  }
-                  setCategory={
-                    setEditNoteCategory
-                  }
+                  values={editNoteForm.values}
+                  setField={editNoteForm.setField}
 
                   onSubmit={updateNote}
 
@@ -598,8 +562,8 @@ function CampaignDetails() {
 
 
         <EncounterForm
-          name={encounterName}
-          setName={setEncounterName}
+          values={encounterForm.values}
+          setField={encounterForm.setField}
           onSubmit={addEncounter}
         />
 
@@ -637,12 +601,8 @@ function CampaignDetails() {
 
 
         <SessionForm
-          scheduledAt={sessionScheduledAt}
-          notes={sessionNotes}
-
-          setScheduledAt={setSessionScheduledAt}
-          setNotes={setSessionNotes}
-
+          values={sessionForm.values}
+          setField={sessionForm.setField}
           onSubmit={addSession}
         />
 

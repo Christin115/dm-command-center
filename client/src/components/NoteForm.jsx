@@ -11,12 +11,8 @@ const NOTE_CATEGORIES = [
 ];
 
 function NoteForm({
-  title,
-  content,
-  category,
-  setTitle,
-  setContent,
-  setCategory,
+  values,
+  setField,
   onSubmit,
   submitLabel = "Add Note",
   onCancel,
@@ -32,10 +28,10 @@ function NoteForm({
       <label>Note Title</label>
 
       <input
-        value={title}
+        value={values.title}
         placeholder="Captain Elira"
         onChange={(event) =>
-          setTitle(event.target.value)
+          setField("title", event.target.value)
         }
         required
       />
@@ -43,9 +39,9 @@ function NoteForm({
       <label>Subject Matter</label>
 
       <select
-        value={category}
+        value={values.category}
         onChange={(event) =>
-          setCategory(event.target.value)
+          setField("category", event.target.value)
         }
       >
         {NOTE_CATEGORIES.map((option) => (
@@ -61,10 +57,10 @@ function NoteForm({
       <label>Notes</label>
 
       <textarea
-        value={content}
+        value={values.content}
         placeholder="Write your campaign note..."
         onChange={(event) =>
-          setContent(event.target.value)
+          setField("content", event.target.value)
         }
         required
       />

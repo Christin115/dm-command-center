@@ -1,8 +1,6 @@
 function SessionForm({
-  scheduledAt,
-  notes,
-  setScheduledAt,
-  setNotes,
+  values,
+  setField,
   onSubmit,
   submitLabel = "Schedule Session",
   onCancel,
@@ -15,17 +13,17 @@ function SessionForm({
 
       <input
         type="datetime-local"
-        value={scheduledAt}
-        onChange={(event) => setScheduledAt(event.target.value)}
+        value={values.scheduledAt}
+        onChange={(event) => setField("scheduledAt", event.target.value)}
         required
       />
 
       <label>Notes</label>
 
       <textarea
-        value={notes}
+        value={values.notes}
         placeholder="Bring minis, review last session's cliffhanger..."
-        onChange={(event) => setNotes(event.target.value)}
+        onChange={(event) => setField("notes", event.target.value)}
       />
 
       <button type="submit">{submitLabel}</button>

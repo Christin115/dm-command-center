@@ -1,18 +1,6 @@
 function CombatantForm({
-  name,
-  combatantType,
-  initiative,
-  maxHp,
-  currentHp,
-  armorClass,
-  notes,
-  setName,
-  setCombatantType,
-  setInitiative,
-  setMaxHp,
-  setCurrentHp,
-  setArmorClass,
-  setNotes,
+  values,
+  setField,
   onSubmit,
   submitLabel = "Add Combatant",
   onCancel,
@@ -23,16 +11,16 @@ function CombatantForm({
 
       <label>Name</label>
       <input
-        value={name}
+        value={values.name}
         placeholder="Goblin Scout"
-        onChange={(event) => setName(event.target.value)}
+        onChange={(event) => setField("name", event.target.value)}
         required
       />
 
       <label>Type</label>
       <select
-        value={combatantType}
-        onChange={(event) => setCombatantType(event.target.value)}
+        value={values.combatantType}
+        onChange={(event) => setField("combatantType", event.target.value)}
       >
         <option value="pc">PC</option>
         <option value="npc">NPC</option>
@@ -42,40 +30,40 @@ function CombatantForm({
       <label>Initiative</label>
       <input
         type="number"
-        value={initiative}
-        onChange={(event) => setInitiative(Number(event.target.value))}
+        value={values.initiative}
+        onChange={(event) => setField("initiative", Number(event.target.value))}
         required
       />
 
       <label>Max HP</label>
       <input
         type="number"
-        value={maxHp}
-        onChange={(event) => setMaxHp(Number(event.target.value))}
+        value={values.maxHp}
+        onChange={(event) => setField("maxHp", Number(event.target.value))}
         required
       />
 
       <label>Current HP</label>
       <input
         type="number"
-        value={currentHp}
-        onChange={(event) => setCurrentHp(Number(event.target.value))}
+        value={values.currentHp}
+        onChange={(event) => setField("currentHp", Number(event.target.value))}
         required
       />
 
       <label>Armor Class</label>
       <input
         type="number"
-        value={armorClass}
-        onChange={(event) => setArmorClass(Number(event.target.value))}
+        value={values.armorClass}
+        onChange={(event) => setField("armorClass", Number(event.target.value))}
         required
       />
 
       <label>Notes</label>
       <textarea
-        value={notes}
+        value={values.notes}
         placeholder="Conditions, reminders..."
-        onChange={(event) => setNotes(event.target.value)}
+        onChange={(event) => setField("notes", event.target.value)}
       />
 
       <button type="submit">{submitLabel}</button>

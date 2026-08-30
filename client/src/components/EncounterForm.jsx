@@ -1,6 +1,6 @@
 function EncounterForm({
-  name,
-  setName,
+  values,
+  setField,
   onSubmit,
   submitLabel = "Add Encounter",
   onCancel,
@@ -12,9 +12,9 @@ function EncounterForm({
       <label>Encounter Name</label>
 
       <input
-        value={name}
+        value={values.name}
         placeholder="Goblin Ambush"
-        onChange={(event) => setName(event.target.value)}
+        onChange={(event) => setField("name", event.target.value)}
         required
       />
 
