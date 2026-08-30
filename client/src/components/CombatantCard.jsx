@@ -39,8 +39,15 @@ function CombatantCard({ combatant, onEdit, onDelete, onAdjustHp, locked, isCurr
     setShowStatBlock(true);
   }
 
+  const articleClasses = [
+    isCurrentTurn && "current-turn",
+    showStatBlock && "stat-block-expanded",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
-    <article className={isCurrentTurn ? "current-turn" : undefined}>
+    <article className={articleClasses || undefined}>
       <h3>{combatant.name}</h3>
 
       {isCurrentTurn && <span className="status turn-badge">Current Turn</span>}

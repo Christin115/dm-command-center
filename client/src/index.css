@@ -279,6 +279,10 @@ article.current-turn {
   min-width: 0;
 }
 
+.campaign-grid > .stat-block-expanded {
+  grid-column: 1 / -1;
+}
+
 /* PAGE HEADER */
 
 .page-header {
@@ -493,7 +497,53 @@ article .status {
 }
 
 .dnd-detail-panel {
-  margin-top: 1rem;
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+
+  border-top: 1px solid var(--border);
+}
+
+.dnd-detail-panel p {
+  max-width: 640px;
+}
+
+.dnd-detail-image {
+  display: block;
+  max-width: 100%;
+  max-height: 320px;
+
+  margin-bottom: 1rem;
+
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.dnd-ability-scores {
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  gap: 0.75rem;
+}
+
+.dnd-ability-scores li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+
+  padding: 0.6rem;
+
+  background: var(--panel-light);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.dnd-ability-scores strong {
+  color: #efe3c5;
+  font-size: 0.8rem;
 }
 
 .dnd-detail-fields {
@@ -508,4 +558,23 @@ article .status {
 
 .dnd-detail-fields strong {
   color: #efe3c5;
+}
+
+.dnd-detail-panel h4 {
+  margin: 1.25rem 0 0.5rem;
+  color: #efe3c5;
+}
+
+.dnd-detail-actions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.dnd-detail-actions strong {
+  color: #fff4d7;
 }
