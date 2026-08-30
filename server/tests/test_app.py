@@ -1,7 +1,9 @@
+from datetime import datetime
+
 import pytest
 
 from server.app import app
-from server.models import db, User, Campaign, Encounter, Combatant
+from server.models import db, User, Campaign, Encounter, Combatant, GameSession
 
 
 @pytest.fixture
@@ -854,6 +856,184 @@ def test_negative_max_hp(client):
 
 
 # -------------------------
+# SESSION CRUD TESTS
+# -------------------------
+
+def test_create_session(client):
+    login(client)
+
+    response = client.post(
+        "/campaigns/1/sessions",
+        json={
+            "scheduled_at": "2026-09-15T18:30:00",
+            "notes": "Bring minis."
+        }
+    )
+
+    data = response.get_json()
+
+    assert response.status_code == 201
+    assert data["scheduled_at"] == "2026-09-15T18:30:00"
+    assert data["status"] == "Scheduled"
+    assert data["notes"] == "Bring minis."
+
+
+def test_create_session_requires_scheduled_at(client):
+    login(client)
+
+    response = client.post(
+        "/campaigns/1/sessions",
+        json={
+            "notes": "No date given."
+        }
+    )
+
+    assert response.status_code == 400
+    assert "error" in response.get_json()
+
+
+def test_get_campaign_sessions_sorted_by_date(client):
+    login(client)
+
+    client.post(
+        "/campaigns/1/sessions",
+        json={
+            "scheduled_at": "2026-10-01T18:00:00"
+        }
+    )
+
+    client.post(
+        "/campaigns/1/sessions",
+        json={
+            "scheduled_at": "2026-09-15T18:00:00"
+        }
+    )
+
+    response = client.get("/campaigns/1/sessions")
+
+    data = response.get_json()
+
+    assert response.status_code == 200
+    assert len(data) == 2
+    assert data[0]["scheduled_at"] == "2026-09-15T18:00:00"
+    assert data[1]["scheduled_at"] == "2026-10-01T18:00:00"
+
+
+def test_get_single_session(client):
+    login(client)
+
+    create_response = client.post(
+        "/campaigns/1/sessions",
+        json={
+            "scheduled_at": "2026-09-15T18:30:00"
+        }
+    )
+
+    session_id = create_response.get_json()["id"]
+
+    response = client.get(f"/sessions/{session_id}")
+
+    data = response.get_json()
+
+    assert response.status_code == 200
+    assert data["id"] == session_id
+
+
+def test_update_session_status(client):
+    login(client)
+
+    create_response = client.post(
+        "/campaigns/1/sessions",
+        json={
+            "scheduled_at": "2026-09-15T18:30:00"
+        }
+    )
+
+    session_id = create_response.get_json()["id"]
+
+    response = client.patch(
+        f"/sessions/{session_id}",
+        json={
+            "status": "Completed"
+        }
+    )
+
+    data = response.get_json()
+
+    assert response.status_code == 200
+    assert data["status"] == "Completed"
+
+
+def test_update_session_reschedule(client):
+    login(client)
+
+    create_response = client.post(
+        "/campaigns/1/sessions",
+        json={
+            "scheduled_at": "2026-09-15T18:30:00"
+        }
+    )
+
+    session_id = create_response.get_json()["id"]
+
+    response = client.patch(
+        f"/sessions/{session_id}",
+        json={
+            "scheduled_at": "2026-09-22T18:30:00"
+        }
+    )
+
+    data = response.get_json()
+
+    assert response.status_code == 200
+    assert data["scheduled_at"] == "2026-09-22T18:30:00"
+
+
+def test_delete_session(client):
+    login(client)
+
+    create_response = client.post(
+        "/campaigns/1/sessions",
+        json={
+            "scheduled_at": "2026-09-15T18:30:00"
+        }
+    )
+
+    session_id = create_response.get_json()["id"]
+
+    response = client.delete(f"/sessions/{session_id}")
+
+    assert response.status_code == 204
+
+    second_response = client.get(f"/sessions/{session_id}")
+
+    assert second_response.status_code == 404
+
+
+def test_invalid_session_status(client):
+    login(client)
+
+    create_response = client.post(
+        "/campaigns/1/sessions",
+        json={
+            "scheduled_at": "2026-09-15T18:30:00"
+        }
+    )
+
+    session_id = create_response.get_json()["id"]
+
+    response = client.patch(
+        f"/sessions/{session_id}",
+        json={
+            "status": "Not A Real Status"
+        }
+    )
+
+    assert response.status_code == 400
+    assert "error" in response.get_json()
+
+
+# -------------------------
 # SECURITY TEST
 # -------------------------
 
@@ -978,6 +1158,47 @@ def test_user_cannot_access_another_users_combatant(client):
 
     response = client.get(
         f"/combatants/{second_combatant_id}"
+    )
+
+    assert response.status_code == 404
+
+
+def test_user_cannot_access_another_users_session(client):
+    with app.app_context():
+        second_user = User(
+            username="FifthDM",
+            email="fifth@example.com"
+        )
+
+        second_user.set_password(
+            "password123"
+        )
+
+        db.session.add(second_user)
+        db.session.commit()
+
+        second_campaign = Campaign(
+            title="Locked Campaign",
+            user_id=second_user.id
+        )
+
+        db.session.add(second_campaign)
+        db.session.commit()
+
+        second_session = GameSession(
+            scheduled_at=datetime.fromisoformat("2026-09-15T18:30:00"),
+            campaign_id=second_campaign.id
+        )
+
+        db.session.add(second_session)
+        db.session.commit()
+
+        second_session_id = second_session.id
+
+    login(client)
+
+    response = client.get(
+        f"/sessions/{second_session_id}"
     )
 
     assert response.status_code == 404

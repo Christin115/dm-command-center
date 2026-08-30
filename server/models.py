@@ -48,6 +48,12 @@ class Campaign(db.Model):
     tasks = db.relationship('Task', back_populates='campaign', cascade='all, delete-orphan')
     notes = db.relationship('Note', back_populates='campaign', cascade='all, delete-orphan')
     encounters = db.relationship('Encounter', back_populates='campaign', cascade='all, delete-orphan')
+    sessions = db.relationship(
+        'GameSession',
+        back_populates='campaign',
+        cascade='all, delete-orphan',
+        order_by='GameSession.scheduled_at'
+    )
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -75,6 +81,7 @@ class Campaign(db.Model):
             data['tasks'] = [task.to_dict() for task in self.tasks]
             data['notes'] = [note.to_dict() for note in self.notes]
             data['encounters'] = [encounter.to_dict() for encounter in self.encounters]
+            data['sessions'] = [game_session.to_dict() for game_session in self.sessions]
 
         return data
 
@@ -284,6 +291,43 @@ class Combatant(db.Model):
             "dnd_monster_index": self.dnd_monster_index,
             "notes": self.notes,
             "encounter_id": self.encounter_id,
+            "created_at": self.created_at.isoformat(),
+            "updated_at": self.updated_at.isoformat()
+            if self.updated_at else None
+        }
+
+class GameSession(db.Model):
+    __tablename__ = 'game_sessions'
+
+    id = db.Column(db.Integer, primary_key=True)
+    scheduled_at = db.Column(db.DateTime, nullable=False)
+    status = db.Column(db.String(20), nullable=False, default='Scheduled')
+    notes = db.Column(db.Text, nullable=True)
+    campaign_id = db.Column(db.Integer, db.ForeignKey('campaigns.id'), nullable=False)
+    campaign = db.relationship('Campaign', back_populates='sessions')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    @validates('scheduled_at')
+    def validate_scheduled_at(self, key, value):
+        if not value:
+            raise ValueError("Scheduled date and time is required.")
+        return value
+
+    @validates('status')
+    def validate_status(self, key, value):
+        allowed = ['Scheduled', 'Completed', 'Cancelled']
+        if value not in allowed:
+            raise ValueError("Status must be one of: Scheduled, Completed, Cancelled")
+        return value
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "scheduled_at": self.scheduled_at.isoformat() if self.scheduled_at else None,
+            "status": self.status,
+            "notes": self.notes,
+            "campaign_id": self.campaign_id,
             "created_at": self.created_at.isoformat(),
             "updated_at": self.updated_at.isoformat()
             if self.updated_at else None

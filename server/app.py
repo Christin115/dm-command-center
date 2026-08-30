@@ -6,7 +6,7 @@ from flask_cors import CORS
 from sqlalchemy.exc import IntegrityError
 import requests
 
-from server.models import (db, bcrypt, User, Campaign, Task, Note, Encounter, Combatant)
+from server.models import (db, bcrypt, User, Campaign, Task, Note, Encounter, Combatant, GameSession)
 
 
 
@@ -835,6 +835,150 @@ def combatant_by_id(id):
     if request.method == "DELETE":
 
         db.session.delete(combatant)
+
+        db.session.commit()
+
+        return {}, 204
+
+@app.route(
+    "/campaigns/<int:campaign_id>/sessions",
+    methods=["GET", "POST"]
+)
+def campaign_sessions(campaign_id):
+
+    user_id = current_user_id()
+
+    if not user_id:
+        return {
+            "error": "Not authorized."
+        }, 401
+
+    campaign = Campaign.query.filter_by(
+        id=campaign_id,
+        user_id=user_id
+    ).first()
+
+    if not campaign:
+        return {
+            "error": "Campaign not found."
+        }, 404
+
+    if request.method == "GET":
+
+        return [
+            game_session.to_dict()
+            for game_session in campaign.sessions
+        ], 200
+
+    data = request.get_json() or {}
+
+    scheduled_at = None
+
+    if data.get("scheduled_at"):
+
+        try:
+            scheduled_at = datetime.fromisoformat(
+                data["scheduled_at"]
+            )
+
+        except ValueError:
+
+            return {
+                "error": "Invalid scheduled date and time."
+            }, 400
+
+    try:
+
+        game_session = GameSession(
+            scheduled_at=scheduled_at,
+            notes=data.get("notes"),
+            campaign_id=campaign.id
+        )
+
+        db.session.add(game_session)
+
+        db.session.commit()
+
+        return game_session.to_dict(), 201
+
+    except ValueError as error:
+
+        db.session.rollback()
+
+        return {
+            "error": str(error)
+        }, 400
+
+@app.route(
+    "/sessions/<int:id>",
+    methods=["GET", "PATCH", "DELETE"]
+)
+def session_by_id(id):
+
+    user_id = current_user_id()
+
+    if not user_id:
+        return {
+            "error": "Not authorized."
+        }, 401
+
+    game_session = (
+        GameSession.query
+        .join(Campaign)
+        .filter(
+            GameSession.id == id,
+            Campaign.user_id == user_id
+        )
+        .first()
+    )
+
+    if not game_session:
+        return {
+            "error": "Session not found."
+        }, 404
+
+    if request.method == "GET":
+
+        return game_session.to_dict(), 200
+
+    if request.method == "PATCH":
+
+        data = request.get_json() or {}
+
+        try:
+
+            if "scheduled_at" in data:
+
+                if not data["scheduled_at"]:
+                    return {
+                        "error": "Scheduled date and time is required."
+                    }, 400
+
+                game_session.scheduled_at = datetime.fromisoformat(
+                    data["scheduled_at"]
+                )
+
+            if "status" in data:
+                game_session.status = data["status"]
+
+            if "notes" in data:
+                game_session.notes = data["notes"]
+
+            db.session.commit()
+
+            return game_session.to_dict(), 200
+
+        except ValueError as error:
+
+            db.session.rollback()
+
+            return {
+                "error": str(error)
+            }, 400
+
+    if request.method == "DELETE":
+
+        db.session.delete(game_session)
 
         db.session.commit()
 

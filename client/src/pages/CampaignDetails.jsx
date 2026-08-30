@@ -9,6 +9,8 @@ import NoteForm from "../components/NoteForm";
 import NoteCard from "../components/NoteCard";
 import EncounterForm from "../components/EncounterForm";
 import EncounterCard from "../components/EncounterCard";
+import SessionForm from "../components/SessionForm";
+import SessionCard from "../components/SessionCard";
 
 
 function CampaignDetails() {
@@ -48,6 +50,11 @@ function CampaignDetails() {
   // CREATE ENCOUNTER
 
   const [encounterName, setEncounterName] = useState("");
+
+  // CREATE SESSION
+
+  const [sessionScheduledAt, setSessionScheduledAt] = useState("");
+  const [sessionNotes, setSessionNotes] = useState("");
 
 
   function loadCampaign() {
@@ -312,6 +319,74 @@ function CampaignDetails() {
   }
 
 
+  async function addSession(event) {
+    event.preventDefault();
+
+    try {
+      await apiFetch(`/campaigns/${id}/sessions`, {
+        method: "POST",
+
+        body: JSON.stringify({
+          scheduled_at: sessionScheduledAt,
+          notes: sessionNotes,
+        }),
+      });
+
+      setSessionScheduledAt("");
+      setSessionNotes("");
+
+      setError("");
+
+      loadCampaign();
+
+    } catch (error) {
+      setError(error.message);
+    }
+  }
+
+
+  async function updateSessionStatus(sessionId, status) {
+    try {
+      await apiFetch(
+        `/sessions/${sessionId}`,
+        {
+          method: "PATCH",
+
+          body: JSON.stringify({
+            status,
+          }),
+        }
+      );
+
+      setError("");
+
+      loadCampaign();
+
+    } catch (error) {
+      setError(error.message);
+    }
+  }
+
+
+  async function deleteSession(sessionId) {
+    try {
+      await apiFetch(
+        `/sessions/${sessionId}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      setError("");
+
+      loadCampaign();
+
+    } catch (error) {
+      setError(error.message);
+    }
+  }
+
+
   if (!campaign) {
     return (
       <main>
@@ -542,6 +617,53 @@ function CampaignDetails() {
 
               onDelete={
                 deleteEncounter
+              }
+            />
+
+          ))}
+
+        </div>
+
+      </section>
+
+
+      {/* SESSION SECTION */}
+
+      <section>
+
+        <h2>
+          Sessions
+        </h2>
+
+
+        <SessionForm
+          scheduledAt={sessionScheduledAt}
+          notes={sessionNotes}
+
+          setScheduledAt={setSessionScheduledAt}
+          setNotes={setSessionNotes}
+
+          onSubmit={addSession}
+        />
+
+
+        <div className="campaign-grid">
+
+          {campaign.sessions.map((session) => (
+
+            <SessionCard
+              key={session.id}
+
+              session={session}
+
+              campaignTitle={campaign.title}
+
+              onStatusChange={
+                updateSessionStatus
+              }
+
+              onDelete={
+                deleteSession
               }
             />
 
