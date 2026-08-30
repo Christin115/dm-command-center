@@ -22,6 +22,7 @@ function EncounterBuilder() {
 
   const [encounter, setEncounter] = useState(null);
   const [error, setError] = useState("");
+  const [currentTurnIndex, setCurrentTurnIndex] = useState(0);
 
   // CREATE COMBATANT
 
@@ -183,11 +184,62 @@ function EncounterBuilder() {
     }
   }
 
-  async function nextRound() {
+  async function nextTurn() {
+    const combatantCount = encounter.combatants.length;
+
+    if (combatantCount === 0) return;
+
+    const nextIndex = (Math.min(currentTurnIndex, combatantCount - 1) + 1) % combatantCount;
+
+    setCurrentTurnIndex(nextIndex);
+
+    if (nextIndex === 0) {
+      try {
+        await apiFetch(`/encounters/${encounterId}`, {
+          method: "PATCH",
+          body: JSON.stringify({ round_number: encounter.round_number + 1 }),
+        });
+
+        setError("");
+        loadEncounter();
+      } catch (error) {
+        setError(error.message);
+      }
+    }
+  }
+
+  async function previousTurn() {
+    const combatantCount = encounter.combatants.length;
+
+    if (combatantCount === 0) return;
+
+    const current = Math.min(currentTurnIndex, combatantCount - 1);
+    const previousIndex = (current - 1 + combatantCount) % combatantCount;
+
+    setCurrentTurnIndex(previousIndex);
+
+    if (previousIndex === combatantCount - 1 && encounter.round_number > 1) {
+      try {
+        await apiFetch(`/encounters/${encounterId}`, {
+          method: "PATCH",
+          body: JSON.stringify({ round_number: encounter.round_number - 1 }),
+        });
+
+        setError("");
+        loadEncounter();
+      } catch (error) {
+        setError(error.message);
+      }
+    }
+  }
+
+  async function toggleEncounterActive() {
     try {
       await apiFetch(`/encounters/${encounterId}`, {
         method: "PATCH",
-        body: JSON.stringify({ round_number: encounter.round_number + 1 }),
+        body: JSON.stringify({
+          status: encounter.status === "Active" ? "Preparing" : "Active",
+        }),
       });
 
       setError("");
@@ -214,18 +266,12 @@ function EncounterBuilder() {
 
         <span className="status">{encounter.status}</span>
 
-        <p>Round {encounter.round_number}</p>
-
         <label>Status</label>
         <select value={encounter.status} onChange={updateStatus}>
           <option value="Preparing">Preparing</option>
           <option value="Active">Active</option>
           <option value="Completed">Completed</option>
         </select>
-
-        <button type="button" onClick={nextRound}>
-          Next Round
-        </button>
       </div>
 
       {error && <p className="error-message">{error}</p>}
@@ -257,8 +303,26 @@ function EncounterBuilder() {
       <section>
         <h2>Combatants</h2>
 
+        <div className="encounter-controls">
+          <button type="button" onClick={toggleEncounterActive}>
+            {encounter.status === "Active" ? "Stop Encounter" : "Start Encounter"}
+          </button>
+
+          <div className="turn-controls">
+            <button type="button" onClick={previousTurn}>
+              Previous Turn
+            </button>
+
+            <button type="button" onClick={nextTurn}>
+              Next Turn
+            </button>
+          </div>
+        </div>
+
+        <p>Round {encounter.round_number}</p>
+
         <div className="campaign-grid">
-          {encounter.combatants.map((combatant) =>
+          {encounter.combatants.map((combatant, index) =>
             editingCombatantId === combatant.id ? (
               <article key={combatant.id}>
                 <CombatantForm
@@ -288,6 +352,10 @@ function EncounterBuilder() {
                 onEdit={startEditingCombatant}
                 onDelete={deleteCombatant}
                 onAdjustHp={adjustHp}
+                locked={encounter.status === "Active"}
+                isCurrentTurn={
+                  index === Math.min(currentTurnIndex, encounter.combatants.length - 1)
+                }
               />
             )
           )}

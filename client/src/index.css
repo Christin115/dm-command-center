@@ -248,6 +248,20 @@ article h3 {
   color: #fff4d7;
 }
 
+/* CURRENT TURN */
+
+article.current-turn {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent), 0 10px 25px rgba(0, 0, 0, 0.18);
+}
+
+.turn-badge {
+  background: var(--accent);
+  color: #1b160d;
+  border-color: var(--accent);
+  margin-right: 0.5rem;
+}
+
 /* DASHBOARD GRID */
 
 .campaign-grid {
@@ -259,6 +273,10 @@ article h3 {
   gap: 1.25rem;
 
   margin-top: 1.5rem;
+}
+
+.campaign-grid > * {
+  min-width: 0;
 }
 
 /* PAGE HEADER */
@@ -423,10 +441,31 @@ article .status {
   margin-bottom: 0.75rem;
 }
 
+/* ENCOUNTER CONTROLS */
+
+.encounter-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2.5rem;
+}
+
+.turn-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.encounter-controls button,
+.turn-controls button {
+  width: auto;
+}
+
 /* HP ADJUST */
 
 .hp-adjust {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.6rem;
   margin-top: 1.25rem;
@@ -434,6 +473,7 @@ article .status {
 
 .hp-adjust input {
   width: 80px;
+  flex-shrink: 0;
 }
 
 .hp-adjust button {

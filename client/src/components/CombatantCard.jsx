@@ -4,7 +4,7 @@ import { apiFetch } from "../api";
 
 import DndDetailPanel from "./DndDetailPanel";
 
-function CombatantCard({ combatant, onEdit, onDelete, onAdjustHp }) {
+function CombatantCard({ combatant, onEdit, onDelete, onAdjustHp, locked, isCurrentTurn }) {
   const [statBlock, setStatBlock] = useState(null);
   const [showStatBlock, setShowStatBlock] = useState(false);
   const [hpAmount, setHpAmount] = useState(1);
@@ -40,8 +40,10 @@ function CombatantCard({ combatant, onEdit, onDelete, onAdjustHp }) {
   }
 
   return (
-    <article>
+    <article className={isCurrentTurn ? "current-turn" : undefined}>
       <h3>{combatant.name}</h3>
+
+      {isCurrentTurn && <span className="status turn-badge">Current Turn</span>}
 
       <span className="status">{combatant.combatant_type}</span>
 
@@ -85,20 +87,24 @@ function CombatantCard({ combatant, onEdit, onDelete, onAdjustHp }) {
       </div>
 
       <div className="card-actions">
-        <button
-          type="button"
-          onClick={() => onEdit(combatant)}
-        >
-          Edit
-        </button>
+        {!locked && (
+          <button
+            type="button"
+            onClick={() => onEdit(combatant)}
+          >
+            Edit
+          </button>
+        )}
 
-        <button
-          type="button"
-          className="danger-button"
-          onClick={() => onDelete(combatant.id)}
-        >
-          Delete
-        </button>
+        {!locked && (
+          <button
+            type="button"
+            className="danger-button"
+            onClick={() => onDelete(combatant.id)}
+          >
+            Delete
+          </button>
+        )}
 
         {combatant.dnd_monster_index && (
           <button
