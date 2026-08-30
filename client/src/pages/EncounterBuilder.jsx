@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { apiFetch } from "../api";
@@ -7,6 +7,7 @@ import { useFormState } from "../hooks/useFormState";
 import CombatantForm from "../components/CombatantForm";
 import CombatantCard from "../components/CombatantCard";
 import DndResourceSearch from "../components/DndResourceSearch";
+import DndDetailPanel from "../components/DndDetailPanel";
 
 const EMPTY_COMBATANT = {
   name: "",
@@ -29,6 +30,8 @@ function EncounterBuilder() {
 
   const combatantForm = useFormState(EMPTY_COMBATANT);
   const [dndMonsterIndex, setDndMonsterIndex] = useState(null);
+  const [previewDetail, setPreviewDetail] = useState(null);
+  const previewRef = useRef(null);
 
   // EDIT COMBATANT
 
@@ -45,9 +48,16 @@ function EncounterBuilder() {
     loadEncounter();
   }, [encounterId]);
 
+  useEffect(() => {
+    if (previewDetail) {
+      previewRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [previewDetail]);
+
   function resetCreateForm() {
     combatantForm.reset();
     setDndMonsterIndex(null);
+    setPreviewDetail(null);
   }
 
   async function addCombatant(event) {
@@ -89,6 +99,7 @@ function EncounterBuilder() {
     });
 
     setDndMonsterIndex(detail.index);
+    setPreviewDetail(detail);
   }
 
   function startEditingCombatant(combatant) {
@@ -269,6 +280,10 @@ function EncounterBuilder() {
         <h2>Add Combatant</h2>
 
         <DndResourceSearch resource="monsters" onSelect={prefillFromMonster} />
+
+        <div ref={previewRef}>
+          <DndDetailPanel detail={previewDetail} />
+        </div>
 
         <CombatantForm
           values={combatantForm.values}
