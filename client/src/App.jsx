@@ -4,6 +4,7 @@ import {
 } from "react-router-dom";
 
 import Navbar from "./components/Navbar";
+import RequireAuth from "./components/RequireAuth";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -37,22 +38,38 @@ function App() {
 
         <Route
           path="/dashboard"
-          element={<Dashboard />}
+          element={
+            <RequireAuth>
+              <Dashboard />
+            </RequireAuth>
+          }
         />
 
         <Route
           path="/campaigns/:id"
-          element={<CampaignDetails />}
+          element={
+            <RequireAuth>
+              <CampaignDetails />
+            </RequireAuth>
+          }
         />
 
         <Route
           path="/campaigns/:campaignId/encounters/:encounterId"
-          element={<EncounterBuilder />}
+          element={
+            <RequireAuth>
+              <EncounterBuilder />
+            </RequireAuth>
+          }
         />
 
         <Route
           path="/compendium"
-          element={<Compendium />}
+          element={
+            <RequireAuth>
+              <Compendium />
+            </RequireAuth>
+          }
         />
 
       </Routes>
