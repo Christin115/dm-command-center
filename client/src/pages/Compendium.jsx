@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import DndResourceSearch from "../components/DndResourceSearch";
 import DndDetailPanel from "../components/DndDetailPanel";
@@ -16,6 +16,13 @@ const RESOURCE_TYPES = [
 function Compendium() {
   const [resourceType, setResourceType] = useState("monsters");
   const [selectedDetail, setSelectedDetail] = useState(null);
+  const detailRef = useRef(null);
+
+  useEffect(() => {
+    if (selectedDetail) {
+      detailRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [selectedDetail]);
 
   function handleResourceChange(event) {
     setResourceType(event.target.value);
@@ -45,7 +52,9 @@ function Compendium() {
         onSelect={setSelectedDetail}
       />
 
-      <DndDetailPanel detail={selectedDetail} />
+      <div ref={detailRef}>
+        <DndDetailPanel detail={selectedDetail} />
+      </div>
     </main>
   );
 }
