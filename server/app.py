@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 
 from flask import Flask, request, session
@@ -12,7 +13,10 @@ from server.models import (db, bcrypt, User, Campaign, Task, Note, Encounter, Co
 
 
 app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///app.db"
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
+    "DATABASE_URL",
+    "sqlite:///app.db"
+)
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["SECRET_KEY"] = "development-secret-key"
 app.json.compact = False
